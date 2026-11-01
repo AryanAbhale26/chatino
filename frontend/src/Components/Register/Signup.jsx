@@ -3,11 +3,12 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { currentUser, register } from "../../Redux/Auth/Action";
-import { BsShieldLock } from "react-icons/bs";
+import { BsShieldLock, BsExclamationTriangleFill } from "react-icons/bs";
 
 const Signup = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isExistingUser, setIsExistingUser] = useState(false);
   const [inputData, setInputData] = useState({
     name: "",
     email: "",
@@ -21,21 +22,40 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
+    setIsExistingUser(false);
+
+    if (inputData.password.length < 4) {
+      setErrorMessage("Password must be at least 4 characters long.");
+      return;
+    }
+
     const res = await dispatch(register(inputData));
     if (res && res.ok && res.jwt) {
       await dispatch(currentUser(res.jwt));
       setOpenSnackbar(true);
       navigate("/");
     } else {
-      setErrorMessage(
-        res?.message || "Registration failed. Please check your details and try again."
-      );
+      const msg =
+        res?.message ||
+        "Registration failed. An account with this email may already exist.";
+      setErrorMessage(msg);
+      if (
+        msg.toLowerCase().includes("already") ||
+        msg.toLowerCase().includes("exist") ||
+        msg.toLowerCase().includes("userd")
+      ) {
+        setIsExistingUser(true);
+      }
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setInputData((values) => ({ ...values, [name]: value }));
+    if (name === "email" && errorMessage) {
+      setErrorMessage("");
+      setIsExistingUser(false);
+    }
   };
 
   useEffect(() => {
@@ -66,8 +86,23 @@ const Signup = () => {
         </h2>
 
         {errorMessage && (
-          <div className="mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
-            {errorMessage}
+          <div className="mb-5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex flex-col space-y-2 animate-fade-in">
+            <div className="flex items-center space-x-2">
+              <BsExclamationTriangleFill className="text-red-400 text-sm shrink-0" />
+              <span className="font-medium">{errorMessage}</span>
+            </div>
+
+            {isExistingUser && (
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/signin", { state: { email: inputData.email } })
+                }
+                className="w-full mt-1 bg-[#00a884] hover:bg-[#00a884]/90 text-white font-semibold py-1.5 rounded-lg transition-transform active:scale-[0.98] text-xs"
+              >
+                Sign In with {inputData.email}
+              </button>
+            )}
           </div>
         )}
 
@@ -98,7 +133,11 @@ const Signup = () => {
               value={inputData.email}
               onChange={handleChange}
               required
-              className="w-full bg-[#202c33] border border-transparent focus:border-[#00a884] rounded-lg px-4 py-2.5 text-sm text-[#e9edef] placeholder-[#8696a0] outline-none transition-colors"
+              className={`w-full bg-[#202c33] border rounded-lg px-4 py-2.5 text-sm text-[#e9edef] placeholder-[#8696a0] outline-none transition-colors ${
+                isExistingUser
+                  ? "border-red-500 focus:border-red-500"
+                  : "border-transparent focus:border-[#00a884]"
+              }`}
             />
           </div>
 

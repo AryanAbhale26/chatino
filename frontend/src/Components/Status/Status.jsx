@@ -3,19 +3,21 @@ import { AiOutlineClose, AiOutlineCamera, AiOutlinePlus } from "react-icons/ai";
 import { BsArrowLeft, BsCheck2 } from "react-icons/bs";
 import StatusUserCard from "./StatusUserCard";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   getMyStatuses,
   addMyStatus,
   getAllContactStatuses,
 } from "./StatusData";
+import { currentUser } from "../../Redux/Auth/Action";
 
 const DEFAULT_AVATAR =
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80";
 
 const Status = () => {
   const navigate = useNavigate();
-  const { auth, chat } = useSelector((store) => store);
+  const dispatch = useDispatch();
+  const { auth } = useSelector((store) => store);
   const [myStories, setMyStories] = useState([]);
   const [contactStatuses, setContactStatuses] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -23,26 +25,29 @@ const Status = () => {
   const [caption, setCaption] = useState("");
   const fileInputRef = useRef(null);
 
+  // Auto-fetch profile if user navigates directly or refreshes on /status
   useEffect(() => {
-    // Load my stories
-    const stories = getMyStatuses();
-    setMyStories(stories);
-
-    // Extract contacts from chats
-    const rawUsers = [];
-    if (chat?.chats && Array.isArray(chat.chats)) {
-      chat.chats.forEach((c) => {
-        if (c.users && Array.isArray(c.users)) {
-          c.users.forEach((u) => {
-            if (u.id !== auth.reqUser?.id) rawUsers.push(u);
-          });
-        }
-      });
+    const token = localStorage.getItem("token");
+    if (!auth.reqUser && token) {
+      dispatch(currentUser(token));
     }
+  }, [auth.reqUser, dispatch]);
 
-    const statuses = getAllContactStatuses(auth.reqUser, rawUsers);
-    setContactStatuses(statuses);
-  }, [auth.reqUser, chat?.chats]);
+  const fetchStatusData = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const [myData, contactData] = await Promise.all([
+      getMyStatuses(token),
+      getAllContactStatuses(token),
+    ]);
+    setMyStories(myData || []);
+    setContactStatuses(contactData || []);
+  };
+
+  useEffect(() => {
+    fetchStatusData();
+  }, [auth.reqUser?.id]);
 
   const handleNavigateBack = () => {
     navigate("/");
@@ -58,15 +63,46 @@ const Status = () => {
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      setStatusImage(reader.result);
+      const rawData = reader.result;
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1200;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL("image/jpeg", 0.85);
+          setStatusImage(compressed);
+        } catch (err) {
+          setStatusImage(rawData);
+        }
+      };
+      img.onerror = () => {
+        setStatusImage(rawData);
+      };
+      img.src = rawData;
     };
     reader.readAsDataURL(file);
   };
 
-  const handlePublishStatus = () => {
-    if (!statusImage) return;
+  const handlePublishStatus = async () => {
+    const token = localStorage.getItem("token");
+    if (!statusImage || !token) return;
 
-    const updated = addMyStatus({
+    const updated = await addMyStatus(token, {
       image: statusImage,
       caption: caption.trim(),
     });
@@ -74,6 +110,7 @@ const Status = () => {
     setShowAddModal(false);
     setStatusImage(null);
     setCaption("");
+    fetchStatusData();
   };
 
   const myStatusUser = {

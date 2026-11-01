@@ -33,7 +33,9 @@ public class TokenProvider {
     }
 
     public String getEmailFromToken(String jwt) {
-        jwt = jwt.substring(7);
+        if (jwt != null && jwt.startsWith("Bearer ")) {
+            jwt = jwt.substring(7);
+        }
         Claims claim = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwt).getBody();
 
         String email = String.valueOf(claim.get("email"));

@@ -18,6 +18,8 @@ import { AiOutlineSearch } from "react-icons/ai";
 import { BsEmojiSmile, BsMicFill, BsThreeDotsVertical, BsShieldLock } from "react-icons/bs";
 import { ImAttachment } from "react-icons/im";
 import { IoSend } from "react-icons/io5";
+import ImageModal from "./ImageModal/ImageModal";
+import EmojiPicker from "./EmojiPicker/EmojiPicker";
 
 const DEFAULT_USER_AVATAR =
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80";
@@ -41,6 +43,15 @@ function HomePage() {
   const [messages, setMessages] = useState([]);
   const [lastMessages, setLastMessages] = useState({});
   const messageContainerRef = useRef(null);
+
+  // Profile image zoom modal state
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [modalImageSrc, setModalImageSrc] = useState(null);
+  const [modalImageTitle, setModalImageTitle] = useState("");
+  const [modalImageSubtitle, setModalImageSubtitle] = useState("");
+
+  // Emoji picker state
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Auto-scroll to bottom whenever messages or currentChat change
   useEffect(() => {
@@ -361,9 +372,22 @@ function HomePage() {
             {/* Chat Top Header */}
             <div className="shrink-0 px-4 py-2.5 bg-[#202c33] border-b border-[#222d34]/60 flex justify-between items-center z-10 shadow-sm">
               <div className="flex items-center space-x-3.5">
-                <div className="relative">
+                <div
+                  className="relative cursor-pointer group"
+                  onClick={() => {
+                    setModalImageSrc(currentChatImage);
+                    setModalImageTitle(currentChatName);
+                    setModalImageSubtitle(
+                      currentChat?.group
+                        ? `${currentChat?.users?.length || 2} members`
+                        : "Click to zoom"
+                    );
+                    setIsImageModalOpen(true);
+                  }}
+                  title="Click to zoom profile picture"
+                >
                   <img
-                    className="w-10 h-10 rounded-full object-cover ring-1 ring-white/10"
+                    className="w-10 h-10 rounded-full object-cover ring-1 ring-white/10 group-hover:ring-[#00a884] group-hover:scale-105 transition-all shadow"
                     src={currentChatImage}
                     alt={currentChatName}
                     onError={(e) => {
@@ -376,7 +400,14 @@ function HomePage() {
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00a884] rounded-full ring-2 ring-[#202c33]"></span>
                 </div>
                 <div>
-                  <h2 className="text-[16px] font-semibold text-[#e9edef] leading-tight">
+                  <h2
+                    onClick={() => {
+                      setModalImageSrc(currentChatImage);
+                      setModalImageTitle(currentChatName);
+                      setIsImageModalOpen(true);
+                    }}
+                    className="text-[16px] font-semibold text-[#e9edef] leading-tight cursor-pointer hover:text-[#00a884] transition-colors"
+                  >
                     {currentChatName}
                   </h2>
                   <p className="text-xs text-[#8696a0] mt-0.5">
@@ -407,6 +438,7 @@ function HomePage() {
             <div
               className="flex-1 overflow-y-auto px-6 py-4 chat-bg-pattern space-y-1.5"
               ref={messageContainerRef}
+              onClick={() => setShowEmojiPicker(false)}
             >
               {messages?.length > 0 ? (
                 messages.map((item, i) => (
@@ -429,13 +461,32 @@ function HomePage() {
             </div>
 
             {/* Bottom Input Section */}
-            <div className="shrink-0 bg-[#202c33] px-4 py-2.5 flex items-center space-x-3 border-t border-[#222d34]/60">
+            <div className="shrink-0 bg-[#202c33] px-4 py-2.5 flex items-center space-x-3 border-t border-[#222d34]/60 relative">
+              {/* Emoji Picker Popover */}
+              {showEmojiPicker && (
+                <div className="absolute bottom-16 left-3 z-50">
+                  <EmojiPicker
+                    onSelectEmoji={(emoji) => {
+                      setContent((prev) => prev + emoji);
+                    }}
+                    onClose={() => setShowEmojiPicker(false)}
+                  />
+                </div>
+              )}
+
               <button
+                type="button"
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
                 title="Emojis"
-                className="text-[#8696a0] hover:text-[#e9edef] p-1.5 rounded-full hover:bg-[#111b21]/40 transition-colors"
+                className={`p-1.5 rounded-full transition-colors ${
+                  showEmojiPicker
+                    ? "text-[#00a884] bg-[#111b21]/70"
+                    : "text-[#8696a0] hover:text-[#e9edef] hover:bg-[#111b21]/40"
+                }`}
               >
                 <BsEmojiSmile className="text-xl" />
               </button>
+
               <button
                 title="Attach"
                 className="text-[#8696a0] hover:text-[#e9edef] p-1.5 rounded-full hover:bg-[#111b21]/40 transition-colors"
@@ -449,17 +500,22 @@ function HomePage() {
                 placeholder="Type a message"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
+                onFocus={() => setShowEmojiPicker(false)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
                     handleCreateNewMessage();
+                    setShowEmojiPicker(false);
                   }
                 }}
               />
 
               {content.trim() ? (
                 <button
-                  onClick={handleCreateNewMessage}
+                  onClick={() => {
+                    handleCreateNewMessage();
+                    setShowEmojiPicker(false);
+                  }}
                   title="Send message"
                   className="bg-[#00a884] text-white p-2.5 rounded-full hover:bg-[#00a884]/90 transition-all shadow-md active:scale-95"
                 >
@@ -477,6 +533,15 @@ function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Profile Image Zoom Lightbox Modal */}
+      <ImageModal
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        src={modalImageSrc}
+        title={modalImageTitle}
+        subtitle={modalImageSubtitle}
+      />
     </div>
   );
 }

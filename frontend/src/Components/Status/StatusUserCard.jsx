@@ -5,6 +5,28 @@ import { AiOutlinePlus } from "react-icons/ai";
 const DEFAULT_AVATAR =
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80";
 
+const formatStatusTime = (dateStr) => {
+  if (!dateStr || dateStr.includes("update") || dateStr.includes("Tap")) return dateStr;
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+    if (isToday) {
+      return `Today, ${timeStr}`;
+    }
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+      return `Yesterday, ${timeStr}`;
+    }
+    return `${date.toLocaleDateString([], { month: "short", day: "numeric" })}, ${timeStr}`;
+  } catch {
+    return dateStr;
+  }
+};
+
 const StatusUserCard = ({
   user,
   isMyStatus,
@@ -71,7 +93,7 @@ const StatusUserCard = ({
             ? hasStory
               ? user?.updatedAt || "Tap to view updates"
               : "Tap to add status update"
-            : user?.updatedAt || "Recent update"}
+            : formatStatusTime(user?.updatedAt) || "Recent update"}
         </p>
       </div>
     </div>

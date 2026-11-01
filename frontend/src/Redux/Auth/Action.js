@@ -21,13 +21,21 @@ export const register = (data) => async (dispatch) => {
     let resData = null;
     try { resData = await res.json(); } catch (_) { /* non-JSON or empty */ }
 
+    const errMsg = resData?.error || resData?.message;
     if (res.ok && resData?.jwt) {
       localStorage.setItem("token", resData.jwt);
       dispatch({ type: REGISTER, payload: resData });
       return { ok: true, ...resData };
     }
 
-    return { ok: false, message: resData?.message || (res.status === 400 ? "Email is already registered with another account." : "Registration failed.") };
+    return {
+      ok: false,
+      message:
+        errMsg ||
+        (res.status === 400
+          ? "An account with this email already exists."
+          : "Registration failed. Please check your details."),
+    };
   } catch (error) {
     console.log("catch error", error);
     return { ok: false, message: "Unable to connect to server. Please try again." };

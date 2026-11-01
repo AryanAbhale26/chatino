@@ -1,14 +1,18 @@
 import { Alert, Snackbar } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { currentUser, login } from "../../Redux/Auth/Action";
 import { BsShieldLock } from "react-icons/bs";
 
 const Signin = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [inputData, setInputData] = useState({ email: "", password: "" });
+  const location = useLocation();
+  const [inputData, setInputData] = useState({
+    email: location?.state?.email || "",
+    password: "",
+  });
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const token = localStorage.getItem("token");

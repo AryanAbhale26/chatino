@@ -17,7 +17,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserException.class)
     public ResponseEntity<ErrorDetail> userExceptionHandler(UserException e, WebRequest request) {
-        ErrorDetail err = new ErrorDetail(e.getMessage(), request.getDescription(false), LocalDateTime.now());
+        ErrorDetail err = new ErrorDetail(e.getMessage(), e.getMessage(), LocalDateTime.now());
         return new ResponseEntity<>(err, HttpStatus.BAD_REQUEST);
     }
 
