@@ -30,18 +30,20 @@ const Profile = ({ handleCloseOpenProfile }) => {
   };
 
   const uploadToCloudinary = (pics) => {
+    if (!pics) return;
     const data = new FormData();
     data.append("file", pics);
-    data.append("upload_preset", "chattingo");
-    data.append("cloud_name", "dadlxgune");
-    fetch("https://api.cloudinary.com/v1_1/dadlxgune/image/upload", {
+    data.append("upload_preset", "chattingo_unsigned");
+    data.append("cloud_name", "dahzunne7");
+
+    fetch("https://api.cloudinary.com/v1_1/dahzunne7/image/upload", {
       method: "post",
       body: data,
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data && (data.secure_url || data.url)) {
-          const imageUrl = (data.secure_url || data.url).toString();
+        const imageUrl = data?.secure_url || data?.url;
+        if (imageUrl) {
           setTempPicture(imageUrl);
           const dataa = {
             id: auth.reqUser?.id,
@@ -50,11 +52,32 @@ const Profile = ({ handleCloseOpenProfile }) => {
           };
           dispatch(updateUser(dataa));
         } else {
-          console.error("Cloudinary upload failed or missing url:", data);
+          console.error("Cloudinary upload failed:", data);
+          // Fallback to local Base64 URL if Cloudinary fails
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setTempPicture(reader.result);
+            dispatch(updateUser({
+              id: auth.reqUser?.id,
+              token: localStorage.getItem("token"),
+              data: { profile: reader.result },
+            }));
+          };
+          reader.readAsDataURL(pics);
         }
       })
       .catch((err) => {
-        console.error("Cloudinary upload error:", err);
+        console.error("Cloudinary upload error, using local fallback:", err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setTempPicture(reader.result);
+          dispatch(updateUser({
+            id: auth.reqUser?.id,
+            token: localStorage.getItem("token"),
+            data: { profile: reader.result },
+          }));
+        };
+        reader.readAsDataURL(pics);
       });
   };
 

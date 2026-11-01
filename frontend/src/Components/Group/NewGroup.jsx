@@ -39,32 +39,38 @@ const NewGroup = ({ groupMember, setIsGroup }) => {
     setIsGroup(false);
   };
 
-  // Function to upload an image to Cloudinary
+  // Function to upload an image to Cloudinary (with local fallback)
   const uploadToCloudinary = (pics) => {
-    // Set the image uploading flag to true
+    if (!pics) return;
     setIsImageUploading(true);
-    // Create a new FormData object and append the selected file to it
+
     const data = new FormData();
     data.append("file", pics);
-    data.append("upload_preset", "chattingo");
-    data.append("cloud_name", "dadlxgune");
-    // Make a POST request to Cloudinary's API to upload the image
-    fetch("https://api.cloudinary.com/v1_1/dadlxgune/image/upload", {
+    data.append("upload_preset", "chattingo_unsigned");
+    data.append("cloud_name", "dahzunne7");
+
+    fetch("https://api.cloudinary.com/v1_1/dahzunne7/image/upload", {
       method: "post",
       body: data,
     })
       .then((res) => res.json())
       .then((data) => {
-        // Set the group image URL and update the image uploading flag
-        if (data && (data.secure_url || data.url)) {
-          setGroupImage((data.secure_url || data.url).toString());
+        const imageUrl = data?.secure_url || data?.url;
+        if (imageUrl) {
+          setGroupImage(imageUrl);
         } else {
-          console.error("Cloudinary upload failed or missing url:", data);
+          console.error("Cloudinary upload failed:", data);
+          const reader = new FileReader();
+          reader.onloadend = () => setGroupImage(reader.result);
+          reader.readAsDataURL(pics);
         }
         setIsImageUploading(false);
       })
       .catch((err) => {
-        console.error("Cloudinary upload error:", err);
+        console.error("Cloudinary upload error, using local fallback:", err);
+        const reader = new FileReader();
+        reader.onloadend = () => setGroupImage(reader.result);
+        reader.readAsDataURL(pics);
         setIsImageUploading(false);
       });
   };
