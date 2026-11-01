@@ -24,12 +24,13 @@ export const register = (data) => async (dispatch) => {
     if (res.ok && resData?.jwt) {
       localStorage.setItem("token", resData.jwt);
       dispatch({ type: REGISTER, payload: resData });
+      return { ok: true, ...resData };
     }
 
-    return resData;
+    return { ok: false, message: resData?.message || (res.status === 400 ? "Email is already registered with another account." : "Registration failed.") };
   } catch (error) {
     console.log("catch error", error);
-    return null;
+    return { ok: false, message: "Unable to connect to server. Please try again." };
   }
 };
 
@@ -68,6 +69,12 @@ export const currentUser = (token) => async (dispatch) => {
         Authorization: `Bearer ${token}`,
       },
     });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403 || res.status === 500) {
+        localStorage.removeItem("token");
+      }
+      return null;
+    }
     const resData = await res.json();
 
     console.log("current user", resData);
@@ -75,6 +82,7 @@ export const currentUser = (token) => async (dispatch) => {
     return resData;
   } catch (error) {
     console.log("catch error", error);
+    localStorage.removeItem("token");
     return null;
   }
 };

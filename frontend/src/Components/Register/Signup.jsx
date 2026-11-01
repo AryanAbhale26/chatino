@@ -1,16 +1,17 @@
-import { Alert, Button, Snackbar } from "@mui/material";
-import { green } from "@mui/material/colors";
+import { Alert, Snackbar } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { currentUser, register } from "../../Redux/Auth/Action";
+import { BsShieldLock } from "react-icons/bs";
 
 const Signup = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [inputData, setInputData] = useState({
+    name: "",
     email: "",
     password: "",
-    name: "",
   });
   const auth = useSelector((s) => s.auth);
   const navigate = useNavigate();
@@ -19,23 +20,22 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
     const res = await dispatch(register(inputData));
-    if (res && res.jwt) {
+    if (res && res.ok && res.jwt) {
       await dispatch(currentUser(res.jwt));
       setOpenSnackbar(true);
       navigate("/");
     } else {
-      // optionally show error toast/snackbar here
+      setErrorMessage(
+        res?.message || "Registration failed. Please check your details and try again."
+      );
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setInputData((values) => ({ ...values, [name]: value }));
-  };
-
-  const handleSnackbarClose = () => {
-    setOpenSnackbar(false);
   };
 
   useEffect(() => {
@@ -49,79 +49,113 @@ const Signup = () => {
   }, [auth.reqUser, navigate]);
 
   return (
-    <div>
-      <div className="flex flex-col justify-center min-h-screen w-[100vw] items-center">
-        <div className="p-10 w-[30%] shadow-md bg-white">
-          <form onSubmit={handleSubmit} className="space-y-5 ">
-            <div>
-              <p className="mb-2">Full name</p>
-              <input
-                type="text"
-                name="name"
-                placeholder="Enter your full name"
-                onChange={handleChange}
-                value={inputData.name}
-                className="py-2 outline outline-green-600 w-full rounded-md border"
-              />
-            </div>
-            <div>
-              <p className="mb-2">Email</p>
-              <input
-                type="text"
-                placeholder="Enter your email"
-                onChange={handleChange}
-                value={inputData.email}
-                name="email"
-                className="py-2 outline outline-green-600 w-full rounded-md border"
-              />
-            </div>
-            <div>
-              <p className="mb-2">Password</p>
-              <input
-                type="password" // Change to type="password" for security
-                name="password"
-                placeholder="Enter your password"
-                onChange={handleChange}
-                value={inputData.password}
-                className="py-2 outline outline-green-600 w-full rounded-md border"
-              />
-            </div>
-            <div>
-              <Button
-                type="submit"
-                sx={{ bgcolor: green[700], padding: ".5rem 0rem" }}
-                className="w-full"
-                variant="contained"
-              >
-                Sign Up
-              </Button>
-            </div>
-          </form>
+    <div className="min-h-screen w-screen flex flex-col justify-center items-center bg-[#0c1317] px-4 py-12 text-[#e9edef] select-none">
+      {/* Brand Logo & Header */}
+      <div className="flex flex-col items-center mb-8">
+        <div className="w-16 h-16 rounded-2xl bg-[#00a884] flex items-center justify-center text-3xl shadow-xl shadow-[#00a884]/20 mb-3">
+          💬
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight text-white">Chattingo</h1>
+        <p className="text-sm text-[#8696a0] mt-1">Create your account to start messaging</p>
+      </div>
 
-          <div className="flex space-x-3 items-center mt-5">
-            <p className="m-0">Already Have an Account?</p>
-            <Button variant="text" onClick={() => navigate("/signin")}>
-              Login
-            </Button>
+      {/* Signup Card */}
+      <div className="w-full max-w-md bg-[#111b21] p-8 rounded-2xl border border-[#222d34] shadow-2xl animate-fade-in">
+        <h2 className="text-xl font-semibold mb-6 text-white text-center">
+          Create an Account
+        </h2>
+
+        {errorMessage && (
+          <div className="mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+            {errorMessage}
           </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-[#8696a0] uppercase tracking-wider mb-1.5">
+              Full Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              placeholder="Your Name"
+              value={inputData.name}
+              onChange={handleChange}
+              required
+              className="w-full bg-[#202c33] border border-transparent focus:border-[#00a884] rounded-lg px-4 py-2.5 text-sm text-[#e9edef] placeholder-[#8696a0] outline-none transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#8696a0] uppercase tracking-wider mb-1.5">
+              Email Address
+            </label>
+            <input
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              value={inputData.email}
+              onChange={handleChange}
+              required
+              className="w-full bg-[#202c33] border border-transparent focus:border-[#00a884] rounded-lg px-4 py-2.5 text-sm text-[#e9edef] placeholder-[#8696a0] outline-none transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#8696a0] uppercase tracking-wider mb-1.5">
+              Password
+            </label>
+            <input
+              type="password"
+              name="password"
+              placeholder="••••••••"
+              value={inputData.password}
+              onChange={handleChange}
+              required
+              className="w-full bg-[#202c33] border border-transparent focus:border-[#00a884] rounded-lg px-4 py-2.5 text-sm text-[#e9edef] placeholder-[#8696a0] outline-none transition-colors"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-[#00a884] hover:bg-[#00a884]/90 text-white font-semibold py-2.5 rounded-lg transition-transform active:scale-[0.98] shadow-lg shadow-[#00a884]/20 mt-2"
+          >
+            Create Account
+          </button>
+        </form>
+
+        <div className="mt-6 pt-5 border-t border-[#222d34] text-center text-sm text-[#8696a0]">
+          Already have an account?{" "}
+          <button
+            onClick={() => navigate("/signin")}
+            className="text-[#00a884] hover:underline font-semibold ml-1"
+          >
+            Sign In
+          </button>
         </div>
       </div>
-      <div>
-        <Snackbar
-          open={openSnackbar}
-          autoHideDuration={6000}
-          onClose={handleSnackbarClose}
-        >
-          <Alert
-            onClose={handleSnackbarClose}
-            severity="success"
-            sx={{ width: "100%" }}
-          >
-            Your account has been successfully created!!
-          </Alert>
-        </Snackbar>
+
+      <div className="mt-8 flex items-center text-xs text-[#8696a0] space-x-1.5">
+        <BsShieldLock className="text-sm text-[#00a884]" />
+        <span>End-to-end encrypted messaging</span>
       </div>
+
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={4000}
+        onClose={() => setOpenSnackbar(false)}
+      >
+        <Alert
+          onClose={() => setOpenSnackbar(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+        >
+          Account created successfully!
+        </Alert>
+      </Snackbar>
     </div>
   );
 };
+
 export default Signup;

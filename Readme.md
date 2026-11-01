@@ -1,342 +1,378 @@
-# 🚀 Chattingo - Mini Hackathon Challenge
+# 💬 Chattingo — Modern Real-Time Chat & DevOps Platform
 
-A full-stack real-time chat application built with React, Spring Boot, and WebSocket technology. **Your mission**: Containerize this application using Docker and deploy it to Hostinger VPS using Jenkins CI/CD pipeline.
+A full-stack, enterprise-grade real-time messaging application and automated DevOps deployment system inspired by WhatsApp Web. Built with modern web standards, featuring instant bi-directional WebSocket messaging, group conversations, status stories, multi-stage Docker containerization, and automated Jenkins CI/CD pipelines.
 
-## 🚨 **IMPORTANT: Registration Required**
-
-### **📝 [REGISTER NOW](https://forms.gle/NgNJNg8yQvPaA1Vz9)** 
-**Deadline: September 5, 2025**
-
-**What you need to register:**
-- Your Name
-- Email ID
-- LinkedIn Profile URL
-- GitHub Profile URL
-
-### **📤 [SUBMISSION FORM](https://forms.gle/ww3vPN29JTNRqzM27)**
-**Deadline: September 10, 2025 (11:59 PM)**
-
-### **📂 Repository Access**
-**Repository URL**: https://github.com/iemafzalhassan/chattingo
-- **Currently**: Private repository (registration phase)
-- **Will be public**: After registration closes (Sept 6)
-- **Action Required**: Fork & star the repository once it becomes public
+Developed by **[Aryan Abhale](https://github.com/AryanAbhale26)**.
 
 ---
 
-## 🎯 **Hackathon Challenge**
-Transform this vanilla application into a production-ready, containerized system with automated deployment!
-
 ## 📋 Table of Contents
-
-- [Hackathon Overview](#-hackathon-overview)
 - [Architecture Overview](#️-architecture-overview)
+- [Key Features](#-key-features)
 - [Technology Stack](#️-technology-stack)
-- [Quick Start](#-quick-start)
-- [Your Tasks](#-your-tasks)
-- [Application Features](#-application-features)
-- [Project Structure](#-project-structure)
-- [Submission Requirements](#-submission-requirements)
-- [Support & Resources](#-support--resources)
-- [Judging Criteria](#-judging-criteria)
+- [Docker Multi-Stage Containerization](#-docker-multi-stage-containerization)
+- [Jenkins CI/CD Pipeline](#-jenkins-cicd-pipeline)
+- [Nginx & Production VPS Deployment](#-nginx--production-vps-deployment)
+- [Local Development Setup](#-local-development-setup)
+- [API Overview](#-api-overview)
+- [Author & License](#-author--license)
 
-## 🏆 Hackathon Overview
-
-### 🎯 Project Goals
-- **Build & Deploy**: Create Dockerfiles and containerize the application
-- **CI/CD Pipeline**: Implement Jenkins automated deployment
-- **VPS Deployment**: Deploy on Hostinger VPS using modern DevOps practices
-
-### 📅 Timeline & Registration
-
-#### **Registration Phase (Sept 3-5)**
-📝 **[REGISTER HERE](https://forms.gle/NgNJNg8yQvPaA1Vz9)** - Complete by Sept 5
-
-**Registration Form Requirements:**
-- Name
-- Email ID  
-- LinkedIn Profile
-- GitHub Profile
-
-#### **Event Schedule**
-- **Sept 6**: Kickoff session (VPS setup, Docker + Jenkins basics)
-- **Sept 7-10**: Build period (3 days)
-- **Sept 10**: Submissions close at 11:59 PM
-- **Sept 11-12**: Judging & reviews
-- **Sept 13**: Winners announced
+---
 
 ## 🏗️ Architecture Overview
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend       │    │   Database      │
-│   (React)       │◄──►│   (Spring Boot) │◄──►│   (MySQL)       │
-│   Port: 80      │    │   Port: 8080    │    │   Port: 3306    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │
-         └────── WebSocket ──────┘
+┌──────────────────────────────────────────┐
+│             Nginx Reverse Proxy          │
+│            Port: 80 / 443 (SSL)          │
+└─────────────────────┬────────────────────┘
+                      │
+         ┌────────────┴────────────┐
+         │                         │
+┌────────▼────────┐       ┌────────▼────────┐
+│  React Frontend │       │   Spring Boot   │
+│  Container (80) │       │ Container(8080) │
+└─────────────────┘       └────────┬────────┘
+                                   │
+                          ┌────────▼────────┐
+                          │  MySQL Database │
+                          │ Container(3306) │
+                          └─────────────────┘
 ```
+
+---
+
+## ✨ Key Features
+
+### ⚡ Real-Time Messaging & WebSockets
+- **Bi-directional Communication**: Spring WebSocket message broker with STOMP sub-protocol and SockJS fallback.
+- **Instant Delivery**: Real-time message status indicators with delivery checkmarks.
+- **Active Chat Indicators**: Live online status and active participant counts.
+
+### 👥 Chats & Group Conversations
+- **1-on-1 Direct Messaging**: Private conversations with user avatars, status details, and instant chat history.
+- **Group Creation**: Create multi-user group conversations with custom group subject titles and group icons.
+- **Participant Management**: Search contacts, add members with interactive chip selection, and customize group properties.
+
+### ⭕ Status Stories
+- **WhatsApp-style Status Feed**: Share vanishing multimedia status updates with your contacts.
+- **Story Viewer Carousel**: Automated story progression with interactive pause on press/hold, left/right navigation, and duration bars.
+- **Status Replies**: Send direct replies to contacts from within their status story views.
+- **Local Persistence**: Upload and preview your status updates instantly.
+
+### 🎨 Sleek Modern UI & Design System
+- **Dark Mode Aesthetic**: Custom curated color palette inspired by modern WhatsApp Web (`#111b21`, `#202c33`, and vibrant emerald accents `#00a884`).
+- **Responsive Layout**: Designed for seamless usability across widescreen monitors, laptops, and tablets.
+- **Interactive Feedback**: Smooth transitions, hover micro-interactions, and message bubble animations.
+
+### 🔒 Security & Data Integrity
+- **JWT (JSON Web Tokens)**: Stateless authentication with secure authorization headers on REST and WebSocket channels.
+- **Spring Security**: Password encryption via BCrypt and endpoint protection.
+- **Relational Persistence**: MySQL schema managed by Spring Data JPA and Hibernate.
+
+---
 
 ## 🛠️ Technology Stack
 
-### Frontend
-- **React 18** - Modern UI framework
-- **Redux Toolkit** - State management
-- **Material-UI** - Component library
-- **Tailwind CSS** - Utility-first CSS
-- **WebSocket (SockJS + STOMP)** - Real-time messaging
-- **React Router** - Client-side routing
+| Domain | Technologies |
+|---|---|
+| **Frontend** | React 18, Redux Toolkit, Tailwind CSS, Material-UI, React Icons, SockJS, StompJS, React Router |
+| **Backend** | Spring Boot 3.3.1, Java 17+, Spring Security 6, Spring Data JPA, Spring WebSocket, JJWT |
+| **Database** | MySQL 8.0 |
+| **Containerization** | Docker, Docker Compose (Multi-stage builds) |
+| **CI/CD & DevOps** | Jenkins Declarative Pipeline, Trivy Security Scanner, Docker Hub |
+| **Web Server** | Nginx (Reverse proxy, WebSocket upgrade, SSL termination) |
 
-### Backend
-- **Spring Boot 3.3.1** - Java framework
-- **Spring Security** - Authentication & authorization
-- **Spring Data JPA** - Database operations
-- **Spring WebSocket** - Real-time communication
-- **JWT** - Token-based authentication
-- **MySQL** - Database
+---
 
-### DevOps (Your Tasks)
-- **Docker** - Containerization (YOU BUILD)
-- **Docker Compose** - Multi-container orchestration (YOU BUILD)
-- **Jenkins** - CI/CD pipeline (YOU BUILD)
-- **Nginx** - Web server & reverse proxy (YOU BUILD)
+## 🐳 Docker Multi-Stage Containerization
 
-## 🚀 Quick Start
+Chattingo uses multi-stage Docker builds to produce ultra-lightweight, secure, and production-ready images.
 
-### **Just Registered? Start Here!**
+### 1. Frontend Dockerfile (3-Stage Build)
+- **Stage 1: Node.js Dependencies Environment**: Installs cached `node_modules` dependencies.
+- **Stage 2: Production React Builder**: Compiles optimized, minified production bundle.
+- **Stage 3: Nginx Runtime Server**: Serves static HTML/JS assets with custom Nginx routing and gzip compression.
 
-#### **Step 1: Fork & Clone**
-```bash
-# Fork this repository on GitHub: https://github.com/iemafzalhassan/chattingo
-# Then clone your fork
-git clone https://github.com/YOUR_USERNAME/chattingo.git
-cd chattingo
+```dockerfile
+# Stage 1 & 2: Build Environment
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --silent
+COPY . .
+RUN npm run build
+
+# Stage 3: Production Nginx Server
+FROM nginx:alpine
+COPY --from=builder /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
 ```
 
-#### **Step 2: Join Discord**
-- **[🗓┃Events-Announcement](https://discord.gg/jYeffuxs)**: Stay updated
-- **[📝┃Events-Chat](https://discord.gg/bHVKCYj4)**: Get technical support
+### 2. Backend Dockerfile (3-Stage Build)
+- **Stage 1: Maven Dependencies**: Resolves and caches Maven dependencies offline.
+- **Stage 2: Application Packaging**: Packages Spring Boot application into executable JAR without running tests.
+- **Stage 3: JRE Runtime**: Runs the application on a minimal, secure Eclipse Temurin JRE container.
 
-#### **Step 3: Local Development Setup**
-Follow **[CONTRIBUTING.md](CONTRIBUTING.md)** for detailed setup instructions.
+```dockerfile
+# Stage 1 & 2: Build Environment
+FROM maven:3.9-eclipse-temurin-17-alpine AS builder
+WORKDIR /app
+COPY pom.xml ./
+RUN mvn dependency:go-offline
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-#### **Step 4: Follow the Timeline**
-- **Sept 7-10**: Build your implementation
-- **Sept 10**: Submit before 11:59 PM
+# Stage 3: Lightweight JRE Runtime
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=builder /app/target/chattingo-0.0.1-SNAPSHOT.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
 
-### **Reference Guides**
-- **Detailed Setup & Deployment**: **[CONTRIBUTING.md](CONTRIBUTING.md)**
+### 3. Docker Compose Orchestration (`docker-compose.yml`)
+Orchestrates the entire distributed application stack with health checks, network isolation, and environment variables.
 
-## 🔧 **YOUR TASKS**
+```yaml
+version: '3.8'
 
-### **Task 1: Docker Implementation (5 Marks)**
+services:
+  dbservice:
+    image: mysql:8.0
+    container_name: chattingo-mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: chattingo_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - chattingo-network
 
-You need to create these files from scratch:
+  appservice:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chattingo-backend
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://dbservice:3306/chattingo_db?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - dbservice
+    networks:
+      - chattingo-network
 
-#### **Frontend Dockerfile** (3-stage build)
-- Stage 1: Node.js build environment
-- Stage 2: Build React application  
-- Stage 3: Nginx runtime server
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: chattingo-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - appservice
+    networks:
+      - chattingo-network
 
-#### **Backend Dockerfile** (3-stage build)
-- Stage 1: Maven build environment
-- Stage 2: Build Spring Boot application
-- Stage 3: JRE runtime
+networks:
+  chattingo-network:
+    driver: bridge
 
-#### **Docker Compose** (Root level)
-Create `docker-compose.yml` to orchestrate all services.
+volumes:
+  mysql_data:
+```
 
-**Scoring**: Single Stage (2), Two Stage (4), Multi Stage (5)
+---
 
-### **Task 2: Jenkins CI/CD Pipeline (17 Marks)**
+## 🔄 Jenkins CI/CD Pipeline
 
-Create a `Jenkinsfile` with these stages:
+The automated Jenkins declarative pipeline executes 7 continuous integration and deployment stages on every git push:
 
 ```groovy
 pipeline {
     agent any
-    
+
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        VPS_SSH_KEY           = credentials('vps-ssh-key')
+        IMAGE_TAG             = "${BUILD_NUMBER}"
+        REGISTRY_USER         = 'aryandocker'
+    }
+
     stages {
-        stage('Git Clone') { 
-            // Clone repository from GitHub (2 Marks)
+        stage('1. Git Clone') {
+            steps {
+                git branch: 'main', url: 'https://github.com/AryanAbhale26/chattingo.git'
+            }
         }
-        stage('Image Build') { 
-            // Build Docker images for frontend & backend (2 Marks)
+
+        stage('2. Image Build') {
+            steps {
+                sh '''
+                    docker build -t ${REGISTRY_USER}/chattingo-backend:${IMAGE_TAG} ./backend
+                    docker build -t ${REGISTRY_USER}/chattingo-frontend:${IMAGE_TAG} ./frontend
+                '''
+            }
         }
-        stage('Filesystem Scan') { 
-            // Security scan of source code (2 Marks)
+
+        stage('3. Filesystem Security Scan') {
+            steps {
+                sh 'trivy fs --severity HIGH,CRITICAL --exit-code 0 .'
+            }
         }
-        stage('Image Scan') { 
-            // Vulnerability scan of Docker images (2 Marks)
+
+        stage('4. Docker Image Scan') {
+            steps {
+                sh '''
+                    trivy image --severity HIGH,CRITICAL --exit-code 0 ${REGISTRY_USER}/chattingo-backend:${IMAGE_TAG}
+                    trivy image --severity HIGH,CRITICAL --exit-code 0 ${REGISTRY_USER}/chattingo-frontend:${IMAGE_TAG}
+                '''
+            }
         }
-        stage('Push to Registry') { 
-            // Push images to Docker Hub/Registry (2 Marks)
+
+        stage('5. Push to Registry') {
+            steps {
+                sh '''
+                    echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
+                    docker push ${REGISTRY_USER}/chattingo-backend:${IMAGE_TAG}
+                    docker push ${REGISTRY_USER}/chattingo-frontend:${IMAGE_TAG}
+                '''
+            }
         }
-        stage('Update Compose') { 
-            // Update docker-compose with new image tags (2 Marks)
+
+        stage('6. Update Compose') {
+            steps {
+                sh '''
+                    sed -i "s|image: ${REGISTRY_USER}/chattingo-backend:.*|image: ${REGISTRY_USER}/chattingo-backend:${IMAGE_TAG}|g" docker-compose.prod.yml
+                    sed -i "s|image: ${REGISTRY_USER}/chattingo-frontend:.*|image: ${REGISTRY_USER}/chattingo-frontend:${IMAGE_TAG}|g" docker-compose.prod.yml
+                '''
+            }
         }
-        stage('Deploy') { 
-            // Deploy to Hostinger VPS (5 Marks)
+
+        stage('7. Deploy to Production VPS') {
+            steps {
+                sh '''
+                    ssh -o StrictHostKeyChecking=no -i $VPS_SSH_KEY user@vps_ip \
+                    "cd /opt/chattingo && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d --remove-orphans"
+                '''
+            }
         }
     }
 }
 ```
 
-### Additional Requirements
-- **Jenkins Shared Library**: 3 Marks
-- **Active Engagement**: 2 Marks
-- **Creativity**: 2 Marks
-- **Quality Storytelling**: 10 Marks
-  - README (Compulsory): 3 Marks
-  - Blog (Optional): 2 Marks
-  - Video (Compulsory): 5 Marks
+---
 
-### **Task 3: VPS Deployment**
-- **Hostinger VPS Setup**: Ubuntu 22.04 LTS, 2GB RAM
-- **Domain Configuration**: Setup your domain with DNS
-- **SSL Certificate**: Configure HTTPS with Let's Encrypt
-- **Production Deployment**: Automated deployment via Jenkins
+## 🌐 Nginx & Production VPS Deployment
 
-**Detailed Instructions**: See **[CONTRIBUTING.md](CONTRIBUTING.md)**
+### Nginx Reverse Proxy with WebSocket Support
+When deploying to production, Nginx proxies requests and upgrades HTTP requests to WebSocket connections seamlessly:
 
-## 📱 Application Features
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com www.yourdomain.com;
 
-### Core Functionality
-- ✅ User authentication (JWT)
-- ✅ Real-time messaging (WebSocket)
-- ✅ Group chat creation
-- ✅ User profile management
-- ✅ Message timestamps
-- ✅ Responsive design
+    # Frontend Single Page Application
+    location / {
+        root /usr/share/nginx/html;
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html;
+    }
 
-### API Endpoints
-```
-POST   /api/auth/register    - User registration
-POST   /api/auth/login       - User login
-GET    /api/users            - Get users
-POST   /api/chats/create     - Create chat
-GET    /api/chats            - Get user chats
-POST   /api/messages/create  - Send message
-GET    /api/messages/{chatId} - Get chat messages
-WS     /ws                   - WebSocket endpoint
-```
+    # Backend REST API Reverse Proxy
+    location /api/ {
+        proxy_pass http://appservice:8080/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-## 📊 Project Structure
-
-```
-chattingo/
-├── backend/                 # Spring Boot application
-│   ├── src/main/java/
-│   │   └── com/chattingo/
-│   │       ├── Controller/  # REST APIs
-│   │       ├── Service/     # Business logic
-│   │       ├── Model/       # JPA entities
-│   │       └── config/      # Configuration
-│   ├── src/main/resources/
-│   │   └── application.properties
-│   ├── .env                 # Environment variables
-│   └── pom.xml
-├── frontend/               # React application
-│   ├── src/
-│   │   ├── Components/     # React components
-│   │   ├── Redux/          # State management
-│   │   └── config/         # API configuration
-│   ├── .env                # Environment variables
-│   └── package.json
-├── CONTRIBUTING.md         # Detailed setup & deployment guide
-└── README.md              # This file
+    # WebSocket Proxy for Real-Time Chat
+    location /ws/ {
+        proxy_pass http://appservice:8080/ws/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 86400;
+    }
+}
 ```
 
-## 🎥 **Submission Requirements**
-
-### **📤 Submission Form: [Submit Here](https://forms.gle/ww3vPN29JTNRqzM27)**
-**Deadline: Sept 10, 11:59 PM**
-
-### **Required Submission Fields**
-1. **Name** - Your full name
-2. **Email ID** - Contact email
-3. **GitHub Repository URL** - Your forked and implemented project
-4. **Video Demo URL** - 3-minute demo video (YouTube/Drive link)
-5. **Live Application URL** - Your deployed application on VPS
-6. **Blog URL** - Technical writeup (Optional but recommended)
-7. **README URL** - Link to your updated README file
-
-### **Required Deliverables**
-1. **GitHub Repository** with your implementation
-   - ✅ Dockerfiles (Backend & Frontend - 3-stage builds)
-   - ✅ docker-compose.yml (Root level orchestration)
-   - ✅ Jenkinsfile (Complete CI/CD pipeline)
-   - ✅ nginx.conf (Frontend configuration)
-   - ✅ Environment configurations
-   - ✅ Updated README with deployment instructions
-
-2. **Live Application** deployed on Hostinger VPS
-   - ✅ Working chat application with HTTPS
-   - ✅ SSL certificate configured
-   - ✅ Domain properly configured
-   - ✅ All features functional (registration, login, messaging)
-
-3. **Video Demo** (3 minutes max) showing:
-   - ✅ Local Docker setup demonstration
-   - ✅ Jenkins pipeline execution
-   - ✅ Live application walkthrough on VPS
-   - ✅ Key features demonstration
-
-### **Bonus Points**
-1. **Blog Post** - Technical writeup of your implementation (2 marks)
-2. **Additional Features** - Enhancements to the chat app
-3. **Monitoring** - Application monitoring and logging
-4. **Security** - Additional security measures
-
-## 🚀 **Getting Started with the Challenge**
-
-### **Implementation Flow** (Following Hackathon Timeline)
-
-#### **Phase 1: Registration (Sept 3-5)**
-1. **[Register Here](https://forms.gle/NgNJNg8yQvPaA1Vz9)** with your details
-2. **Fork this repository**: https://github.com/iemafzalhassan/chattingo
-3. **Join Discord** channels for updates and support
-
-#### **Phase 2: Kickoff Session (Sept 6)**
-- **Attend intro session** - VPS setup guide, Docker & Jenkins basics
-- **Get your VPS** access and domain setup
-- **Ask questions** and clarify requirements
-
-#### **Phase 3: Build Period (Sept 7-10)**
-- **Day 1**: Local development setup → **[CONTRIBUTING.md](CONTRIBUTING.md)**
-- **Day 2**: Docker & Jenkins implementation  
-- **Day 3**: VPS deployment → **[CONTRIBUTING.md](CONTRIBUTING.md)**
-
-#### **Phase 4: Submission (Sept 10)**
-📤 **[SUBMIT HERE](https://forms.gle/ww3vPN29JTNRqzM27)** before 11:59 PM
-
-#### **Phase 5: Results (Sept 11-13)**
-- **Sept 11-12**: Judging & reviews
-- **Sept 13**: Winners announced
-
-## 📞 Support & Resources
-
-### Discord Channels
-- **[🗓┃𝖤𝗏𝖾𝗇𝗍𝗌-𝖠𝗇𝗇𝗈𝗎𝗇𝖼𝖾𝗆𝖾𝗇𝗍](https://discord.gg/jYeffuxs)**: Stay Active in the Announcement channel for Hackathon Update. 
-- **[📝┃𝖤𝗏𝖾𝗇𝗍𝗌-𝖢𝗁𝖺𝗍](https://discord.gg/bHVKCYj4)**: Technical support.
-
-### Reference Links
-- [Hackathon Repository](https://github.com/iemafzalhassan/chattingo)
-- [Docker Documentation](https://docs.docker.com/)
-- [Jenkins Documentation](https://www.jenkins.io/doc/)
-- [Hostinger VPS Guide](https://www.hostinger.com/tutorials/vps)
-
-## 🏅 Judging Criteria
-
-| Component | Marks | Description |
-|-----------|-------|-------------|
-| Dockerfile | 5 | Multi-stage implementation |
-| Jenkinsfile | 17 | Complete CI/CD pipeline |
-| Shared Library | 3 | Reusable Jenkins components |
-| Engagement | 2 | Active participation |
-| Creativity | 2 | Unique features/implementation |
-| Documentation | 10 | README, blog, video |
+### SSL Setup (Let's Encrypt / Certbot)
+```bash
+sudo apt update && sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+```
 
 ---
 
-**Good luck with your hackathon project! 🚀**
+## 🚀 Local Development Setup
+
+### 1. Database Setup
+Ensure MySQL is running locally:
+```sql
+CREATE DATABASE chattingo_db;
+```
+
+### 2. Backend Setup
+```bash
+cd backend
+# Edit src/main/resources/application.properties if needed
+.\mvnw.cmd spring-boot:run   # On Windows
+./mvnw spring-boot:run       # On Linux/macOS
+```
+The backend starts at `http://localhost:8080`.
+
+### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+npm start
+```
+The application opens at `http://localhost:3000`.
+
+---
+
+## 📡 API Overview
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/auth/signup` | Register a new user account |
+| `POST` | `/auth/signin` | Authenticate user & obtain JWT |
+| `GET` | `/api/users/profile` | Retrieve authenticated user profile |
+| `GET` | `/api/users/search?name={query}` | Search users by name or email |
+| `PUT` | `/api/users/update` | Update user name and profile picture |
+| `POST` | `/api/chats/single` | Create or fetch a 1-on-1 conversation |
+| `POST` | `/api/chats/group` | Create a new group chat |
+| `GET` | `/api/chats/user` | Fetch all chats for the logged-in user |
+| `POST` | `/api/messages/create` | Send a new message |
+| `GET` | `/api/messages/chat/{chatId}` | Retrieve message history for a chat |
+| `WS` | `/ws` | WebSocket handshake & STOMP topic subscriptions |
+
+---
+
+## 👤 Author
+
+**Aryan Abhale**
+- GitHub: [@AryanAbhale26](https://github.com/AryanAbhale26)
+
+---
+
+## 📄 License
+This project is open source and available under the [MIT License](LICENSE).

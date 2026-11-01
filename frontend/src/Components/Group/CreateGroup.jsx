@@ -6,101 +6,158 @@ import NewGroup from "./NewGroup";
 import { useDispatch, useSelector } from "react-redux";
 import { searchUser } from "../../Redux/Auth/Action";
 
+const DEFAULT_AVATAR =
+  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80";
+
 const CreateGroup = ({ setIsGroup }) => {
-  // State to manage whether to create a new group or not
   const [newGroup, setNewGroup] = useState(false);
-  // State to store the selected group members
   const [groupMember, setGroupMember] = useState(new Set());
-  // State to store the search query for users
   const [query, setQuery] = useState("");
   const dispatch = useDispatch();
-  const { auth } = useSelector((store) => store);
-  // Get the user's token from local storage
+  const { auth, chat } = useSelector((store) => store);
   const token = localStorage.getItem("token");
 
-  // Function to remove a member from the group
-  const handleRemoveMember = (item) => {
-    const updatedMembers = new Set(groupMember);
-    updatedMembers.delete(item);
-    setGroupMember(updatedMembers);
+  const handleRemoveMember = (member) => {
+    const updated = new Set(groupMember);
+    updated.delete(member);
+    setGroupMember(updated);
   };
 
-  // Function to search for users based on a keyword
+  const handleToggleMember = (user) => {
+    const updated = new Set(groupMember);
+    // check if already selected
+    const exists = Array.from(updated).find((m) => m.id === user.id);
+    if (exists) {
+      updated.delete(exists);
+    } else {
+      updated.add(user);
+    }
+    setGroupMember(updated);
+  };
+
   const handleSearch = (keyword) => {
     dispatch(searchUser({ keyword, token }));
   };
 
+  // Contacts available from existing chats
+  const chatContacts = [];
+  if (chat?.chats) {
+    chat.chats.forEach((c) => {
+      if (!c.group) {
+        const u = c.users?.find((usr) => usr.id !== auth.reqUser?.id);
+        if (u && !chatContacts.some((item) => item.id === u.id)) {
+          chatContacts.push(u);
+        }
+      }
+    });
+  }
+
+  const displayedUsers = query
+    ? auth.searchUser || []
+    : chatContacts;
+
   return (
-    <div className="w-full h-full">
-      {!newGroup && (
-        <div>
+    <div className="w-full h-full flex flex-col bg-[#111b21] animate-fade-in text-[#e9edef]">
+      {!newGroup ? (
+        <div className="w-full h-full flex flex-col">
           {/* Header */}
-          <div className="flex items-center space-x-10 bg-[#069b60] text-white pt-16 px-10 pb-5">
-            <BsArrowLeft className="cursor-pointer text-2xl font-bold" />
-            <p className="text-xl font-semibold">Add Participants</p>
+          <div className="h-[108px] bg-[#202c33] flex items-end px-6 pb-4 space-x-6 border-b border-[#222d34]/60 shrink-0">
+            <button
+              onClick={() => setIsGroup(false)}
+              className="text-[#aebac1] hover:text-[#e9edef] p-1 rounded-full transition-colors"
+              title="Close"
+            >
+              <BsArrowLeft className="text-2xl font-bold" />
+            </button>
+            <div>
+              <h2 className="text-lg font-semibold tracking-wide">Add group participants</h2>
+              <p className="text-xs text-[#8696a0]">
+                {groupMember.size} selected
+              </p>
+            </div>
           </div>
 
-          <div className="relative bg-white py-4 px-3">
-            {/* Showing and removing group members */}
-            <div className="flex space-x-2 flex-wrap space-y-1">
-              {groupMember.size > 0 &&
-                Array.from(groupMember).map((item, index) => (
-                  <SelectedMember
-                    key={index}
-                    handleRemoveMember={(item) => handleRemoveMember(item)}
-                    member={item}
-                  />
-                ))}
+          {/* Selected Members Chips */}
+          {groupMember.size > 0 && (
+            <div className="p-3 bg-[#111b21] border-b border-[#222d34]/60 flex flex-wrap gap-2 max-h-28 overflow-y-auto">
+              {Array.from(groupMember).map((item) => (
+                <SelectedMember
+                  key={item.id}
+                  handleRemoveMember={() => handleRemoveMember(item)}
+                  member={item}
+                />
+              ))}
             </div>
+          )}
 
-            {/* Adding group members */}
+          {/* Search Member Input */}
+          <div className="px-4 py-3 bg-[#111b21] border-b border-[#222d34]/60">
             <input
               type="text"
-              className="outline-none border-b border-[#8888] p-2 w-[93%]"
-              placeholder="Search user"
+              className="w-full bg-[#202c33] text-[#e9edef] placeholder-[#8696a0] px-3.5 py-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#00a884]"
+              placeholder="Search contacts"
               value={query}
               onChange={(e) => {
-                handleSearch(e.target.value);
                 setQuery(e.target.value);
+                handleSearch(e.target.value);
               }}
             />
           </div>
 
-          <div className="bg-white overflow-y-scroll h-[50.3vh]">
-            {query &&
-              auth.searchUser?.map((item) => (
-                <div
-                  onClick={() => {
-                    const updated = new Set(groupMember);
-                    updated.add(item);
-                    setGroupMember(updated);
-                    setQuery("");
-                  }}
-                  key={item?.id}
-                >
-                  <hr />
-                  <ChatCard userImg={item.profile} name={item.name} />
-                </div>
-              ))}
+          {/* User List */}
+          <div className="flex-1 overflow-y-auto">
+            {displayedUsers.length > 0 ? (
+              displayedUsers.map((item) => {
+                const isSelected = Array.from(groupMember).some(
+                  (m) => m.id === item.id
+                );
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleToggleMember(item)}
+                    className={`transition-colors ${
+                      isSelected ? "bg-[#2a3942]/60" : ""
+                    }`}
+                  >
+                    <ChatCard
+                      userImg={item.profile || DEFAULT_AVATAR}
+                      name={item.name}
+                      lastMessage={{
+                        content: item.email || (isSelected ? "Selected" : "Tap to add"),
+                      }}
+                      isActive={isSelected}
+                    />
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-12 text-center text-sm text-[#8696a0]">
+                {query
+                  ? `No contacts found for "${query}"`
+                  : "Search for users above to add them to your group"}
+              </div>
+            )}
           </div>
 
-          <div className="bottom-10 py-10 bg-slate-200 items-center justify-center flex">
-            <div
-              onClick={() => {
-                if (groupMember.size === 0) return;
-                setNewGroup(true);
-              }}
-              className="bg-green-600 rounded-full p-4 cursor-pointer"
-            >
-              <BsArrowRight className="text-white font-bold text-3xl" />
+          {/* Floating Action Button to proceed */}
+          {groupMember.size > 0 && (
+            <div className="p-4 bg-[#202c33] flex justify-end shrink-0 border-t border-[#222d34]/60">
+              <button
+                onClick={() => setNewGroup(true)}
+                className="bg-[#00a884] hover:bg-[#00a884]/90 text-white p-3.5 rounded-full shadow-lg transition-transform active:scale-95 flex items-center justify-center"
+                title="Next"
+              >
+                <BsArrowRight className="text-2xl" />
+              </button>
             </div>
-          </div>
+          )}
         </div>
-      )}
-
-      {newGroup && (
-        // Render the NewGroup component for creating a new group
-        <NewGroup groupMember={groupMember} setIsGroup={setIsGroup} />
+      ) : (
+        <NewGroup
+          groupMember={groupMember}
+          setIsGroup={setIsGroup}
+          onBack={() => setNewGroup(false)}
+        />
       )}
     </div>
   );

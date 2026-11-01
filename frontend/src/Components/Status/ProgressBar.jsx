@@ -1,39 +1,43 @@
-import { useEffect, useState } from "react";
-import "./ProgressBar.css";
+import React, { useEffect, useState } from "react";
 
-const ProgressBar = ({ index, activeIndex, duration }) => {
-  // Check if this progress bar is currently active
-  const isActive = index === activeIndex;
-
-  // State to manage the progress of the bar
+const ProgressBar = ({ index, activeIndex, duration, isPaused }) => {
+  const isPast = index < activeIndex;
+  const isCurrent = index === activeIndex;
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      setProgress((prev) => {
-        if (prev < 100) {
-          return prev + 1;
-        }
-        clearInterval(intervalId);
-        return prev;
-      });
-    }, duration / 100);
+    if (!isCurrent) {
+      setProgress(isPast ? 100 : 0);
+      return;
+    }
 
-    // Clean up the interval when the component unmounts or activeIndex changes
-    return () => clearInterval(intervalId);
-  }, [duration, activeIndex]);
-
-  useEffect(() => {
-    // Reset the progress when activeIndex changes
     setProgress(0);
-  }, [activeIndex]);
+    const intervalTime = 50;
+    const step = 100 / (duration / intervalTime);
+
+    const intervalId = setInterval(() => {
+      if (isPaused) return;
+
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(intervalId);
+          return 100;
+        }
+        return Math.min(prev + step, 100);
+      });
+    }, intervalTime);
+
+    return () => clearInterval(intervalId);
+  }, [activeIndex, isCurrent, isPast, duration, isPaused]);
 
   return (
-    <div className={`progress-bar-container ${isActive ? "active" : ""}`}>
+    <div className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden mx-1 backdrop-blur-xs">
       <div
-        className={` ${isActive ? "progress-bar" : ""}`}
-        style={{ width: `${progress}%` }}
-      ></div>
+        className="h-full bg-white rounded-full transition-all duration-75 ease-linear"
+        style={{
+          width: isPast ? "100%" : isCurrent ? `${progress}%` : "0%",
+        }}
+      />
     </div>
   );
 };

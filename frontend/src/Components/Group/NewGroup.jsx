@@ -1,130 +1,132 @@
-import { Avatar, Button, CircularProgress } from "@mui/material";
 import { useState } from "react";
-import { BsArrowLeft, BsCheck2 } from "react-icons/bs";
+import { BsArrowLeft, BsCheck2, BsCamera } from "react-icons/bs";
 import { useDispatch } from "react-redux";
 import { createGroupChat } from "../../Redux/Chat/Action";
 
-const NewGroup = ({ groupMember, setIsGroup }) => {
-  // State to manage image uploading
-  const [isImageUploading, setIsImageUploading] = useState(false);
-  // State to store the group image
+const DEFAULT_GROUP_AVATAR =
+  "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&q=80";
+
+const NewGroup = ({ groupMember, setIsGroup, onBack }) => {
   const [groupImage, setGroupImage] = useState(null);
-  // State to store the group name
   const [groupName, setGroupName] = useState("");
   const dispatch = useDispatch();
-  // Get the user's token from local storage
   const token = localStorage.getItem("token");
 
-  // Function to handle the creation of a new group
   const handleCreateGroup = () => {
-    // Extract user IDs from group members
+    if (!groupName.trim()) return;
+
     let userIds = [];
     for (let user of groupMember) {
       userIds.push(user.id);
     }
-    // Create a group object with user IDs, group name, and group image
+
     const group = {
       userIds,
-      chatName: groupName,
-      chatImage: groupImage,
+      chatName: groupName.trim(),
+      chatImage: groupImage || DEFAULT_GROUP_AVATAR,
     };
-    // Create data object with group and token
-    const data = {
-      group,
-      token,
-    };
-    // Dispatch an action to create a group chat
-    dispatch(createGroupChat(data));
-    // Close the new group creation interface
+
+    dispatch(createGroupChat({ group, token }));
     setIsGroup(false);
   };
 
-  // Function to upload an image to Cloudinary (with local fallback)
-  const uploadToCloudinary = (pics) => {
-    if (!pics) return;
-    setIsImageUploading(true);
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    const data = new FormData();
-    data.append("file", pics);
-    data.append("upload_preset", "chattingo_unsigned");
-    data.append("cloud_name", "dahzunne7");
-
-    fetch("https://api.cloudinary.com/v1_1/dahzunne7/image/upload", {
-      method: "post",
-      body: data,
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const imageUrl = data?.secure_url || data?.url;
-        if (imageUrl) {
-          setGroupImage(imageUrl);
-        } else {
-          console.error("Cloudinary upload failed:", data);
-          const reader = new FileReader();
-          reader.onloadend = () => setGroupImage(reader.result);
-          reader.readAsDataURL(pics);
-        }
-        setIsImageUploading(false);
-      })
-      .catch((err) => {
-        console.error("Cloudinary upload error, using local fallback:", err);
-        const reader = new FileReader();
-        reader.onloadend = () => setGroupImage(reader.result);
-        reader.readAsDataURL(pics);
-        setIsImageUploading(false);
-      });
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setGroupImage(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full flex flex-col bg-[#111b21] animate-fade-in text-[#e9edef]">
       {/* Header */}
-      <div className="flex items-center space-x-10 bg-[#008069] text-white pt-16 px-10 pb-5">
-        <BsArrowLeft className="cursor-pointer text-2xl font-bold" />
-        <p className="text-xl font-semibold">New Group</p>
+      <div className="h-[108px] bg-[#202c33] flex items-end px-6 pb-4 space-x-6 border-b border-[#222d34]/60 shrink-0">
+        <button
+          onClick={onBack || (() => setIsGroup(false))}
+          className="text-[#aebac1] hover:text-[#e9edef] p-1 rounded-full transition-colors"
+          title="Back"
+        >
+          <BsArrowLeft className="text-2xl font-bold" />
+        </button>
+        <h2 className="text-lg font-semibold tracking-wide">New Group</h2>
       </div>
 
-      {/* Group image */}
-      <div className="flex flex-col justify-center items-center my-12">
-        <label htmlFor="imgInput" className="relative">
-          <Avatar
-            alt="Group Image"
-            sx={{ width: "15rem", height: "15rem" }}
-            src={
-              groupImage ||
-              "https://media.istockphoto.com/id/1455296779/photo/smiling-businesspeople-standing-arm-in-arm-in-an-office-hall.webp?b=1&s=170667a&w=0&k=20&c=0bdu3-mVcOw6FN_vIkwTx4pCE6jgL7Jy29bBWZhoiik="
-            }
-          />
-          {isImageUploading && (
-            <CircularProgress className="absolute top-[5rem] left-[6rem]" />
-          )}
-        </label>
-        <input
-          type="file"
-          id="imgInput"
-          className="hidden"
-          onChange={(e) => uploadToCloudinary(e.target.files[0])}
-        />
-      </div>
-
-      {/* Group name input */}
-      <div className="w-full flex justify-between items-center py-2 px-5">
-        <input
-          className="w-full outline-none border-b-2 border-green-700 px-2 bg-transparent"
-          placeholder="Group Subject"
-          value={groupName || ""}
-          type="text"
-          onChange={(e) => setGroupName(e.target.value)}
-        />
-      </div>
-
-      {/* Create group button */}
-      {groupName && (
-        <div className="py-10 bg-slate-200 flex items-center justify-center">
-          <Button onClick={handleCreateGroup}>
-            <div className="bg-[#0c977d] rounded-full p-4">
-              <BsCheck2 className="text-white text-3xl font-bold" />
+      {/* Group Details Form */}
+      <div className="flex-1 overflow-y-auto px-6 py-8">
+        {/* Group Photo */}
+        <div className="flex flex-col items-center justify-center mb-8">
+          <label
+            htmlFor="groupImgInput"
+            className="relative cursor-pointer group rounded-full overflow-hidden w-36 h-36 ring-4 ring-[#202c33] shadow-lg"
+          >
+            <img
+              src={groupImage || DEFAULT_GROUP_AVATAR}
+              alt="Group"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+              <BsCamera className="text-2xl mb-1" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider">
+                Add Photo
+              </span>
             </div>
-          </Button>
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            id="groupImgInput"
+            className="hidden"
+            onChange={handleImageChange}
+          />
+          <p className="text-xs text-[#8696a0] mt-2">
+            Add a group icon (optional)
+          </p>
+        </div>
+
+        {/* Group Subject */}
+        <div className="bg-[#111b21] rounded-lg p-4 border border-[#222d34]/60 mb-6">
+          <label className="text-xs font-semibold uppercase tracking-wider text-[#00a884] block mb-2">
+            Group Subject
+          </label>
+          <input
+            className="w-full bg-[#202c33] text-[#e9edef] placeholder-[#8696a0] px-4 py-2.5 rounded-lg text-sm outline-none border border-transparent focus:border-[#00a884]"
+            placeholder="Type group name here..."
+            value={groupName}
+            type="text"
+            onChange={(e) => setGroupName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleCreateGroup()}
+            autoFocus
+          />
+          <p className="text-xs text-[#8696a0] mt-2">
+            Provide a group subject and optional group icon
+          </p>
+        </div>
+
+        {/* Participants count review */}
+        <div className="bg-[#111b21] rounded-lg p-4 border border-[#222d34]/60">
+          <span className="text-xs text-[#8696a0]">
+            Participants:{" "}
+            <strong className="text-[#e9edef]">
+              {groupMember ? groupMember.size : 0} members selected
+            </strong>
+          </span>
+        </div>
+      </div>
+
+      {/* Done Button */}
+      {groupName.trim() && (
+        <div className="p-4 bg-[#202c33] flex justify-end shrink-0 border-t border-[#222d34]/60">
+          <button
+            onClick={handleCreateGroup}
+            className="bg-[#00a884] hover:bg-[#00a884]/90 text-white p-3.5 rounded-full shadow-lg transition-transform active:scale-95 flex items-center justify-center"
+            title="Create group"
+          >
+            <BsCheck2 className="text-3xl font-bold" />
+          </button>
         </div>
       )}
     </div>

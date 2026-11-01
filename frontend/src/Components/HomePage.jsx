@@ -15,8 +15,14 @@ import SearchBar from "./HomeComponents/SearchBar";
 import ChatList from "./HomeComponents/ChatList";
 import MessageCard from "./MessageCard/MessageCard";
 import { AiOutlineSearch } from "react-icons/ai";
-import { BsEmojiSmile, BsMicFill, BsThreeDotsVertical } from "react-icons/bs";
+import { BsEmojiSmile, BsMicFill, BsThreeDotsVertical, BsShieldLock } from "react-icons/bs";
 import { ImAttachment } from "react-icons/im";
+import { IoSend } from "react-icons/io5";
+
+const DEFAULT_USER_AVATAR =
+  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80";
+const DEFAULT_GROUP_AVATAR =
+  "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=120&q=80";
 
 function HomePage() {
   const [querys, setQuerys] = useState("");
@@ -36,17 +42,17 @@ function HomePage() {
   const [lastMessages, setLastMessages] = useState({});
   const messageContainerRef = useRef(null);
 
+  // Auto-scroll to bottom whenever messages or currentChat change
   useEffect(() => {
-    // Scroll to bottom whenever messages change
     if (messageContainerRef.current) {
       messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, currentChat]);
 
-  // Function to establish a WebSocket connection
+  // Establish WebSocket connection
   const connect = () => {
-    if (!token) return; // don't attempt without auth
-    
+    if (!token) return;
+
     const client = new Client({
       webSocketFactory: () => new SockJs(`${BASE_API_URL}/ws`),
       connectHeaders: {
@@ -56,15 +62,14 @@ function HomePage() {
       onConnect: onConnect,
       onStompError: onError,
       debug: (str) => {
-        console.log('STOMP: ' + str);
+        // console.log('STOMP: ' + str);
       },
     });
-    
+
     setStompClient(client);
     client.activate();
   };
 
-  // Function to get a specific cookie by name
   function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
@@ -73,17 +78,14 @@ function HomePage() {
     }
   }
 
-  // Callback for WebSocket connection error
   const onError = (error) => {
-    console.log("on error ", error);
+    console.log("STOMP error: ", error);
   };
 
-  // Callback for successful WebSocket connection
   const onConnect = (frame) => {
     setIsConnected(true);
   };
 
-  // Callback to handle received messages from WebSocket
   const onMessageReceive = (payload) => {
     try {
       const receivedMessage = JSON.parse(payload.body);
@@ -93,7 +95,6 @@ function HomePage() {
     }
   };
 
-  // Effect to establish a WebSocket connection
   useEffect(() => {
     connect();
     return () => {
@@ -102,11 +103,11 @@ function HomePage() {
           stompClient.deactivate();
           setIsConnected(false);
         }
-      } catch (e) { }
+      } catch (e) {}
     };
   }, []);
 
-  // Effect to subscribe to a chat when connected
+  // Subscribe to the active chat topic
   useEffect(() => {
     if (isConnected && stompClient && stompClient.connected && currentChat?.id) {
       const topic = currentChat.group
@@ -120,7 +121,7 @@ function HomePage() {
             if (subscription && typeof subscription.unsubscribe === "function") {
               subscription.unsubscribe();
             }
-          } catch (e) { }
+          } catch (e) {}
         };
       } catch (e) {
         console.error("Error subscribing to topic:", e);
@@ -128,9 +129,15 @@ function HomePage() {
     }
   }, [isConnected, stompClient, currentChat]);
 
-  // Effect to handle sending a new message via WebSocket
+  // Send message over WebSocket
   useEffect(() => {
-    if (message.newMessage && isConnected && stompClient && stompClient.connected && currentChat?.id) {
+    if (
+      message.newMessage &&
+      isConnected &&
+      stompClient &&
+      stompClient.connected &&
+      currentChat?.id
+    ) {
       try {
         if (typeof stompClient.publish === "function") {
           stompClient.publish({
@@ -147,254 +154,328 @@ function HomePage() {
     }
   }, [message.newMessage, isConnected, stompClient, currentChat]);
 
-  // Effect to set the messages state from the store
   useEffect(() => {
     if (message.messages) {
       setMessages(message.messages);
     }
   }, [message.messages]);
 
-  // Effect to get all messages when the current chat changes
   useEffect(() => {
     if (currentChat?.id) {
       dispatch(getAllMessages({ chatId: currentChat.id, token }));
     }
   }, [currentChat, message.newMessage]);
 
-  // Effect to get user chats and groups
   useEffect(() => {
     dispatch(getUsersChat({ token }));
   }, [chat.createdChat, chat.createdGroup]);
 
-  // Function to handle opening the user menu
   const handleClick = (e) => {
     setAnchorEl(e.currentTarget);
   };
 
-  // Function to handle closing the user menu
   const handleClose = () => {
     setAnchorEl(null);
   };
 
-  // Function to handle clicking on a chat card
   const handleClickOnChatCard = (userId) => {
     dispatch(createChat({ token, data: { userId } }));
+    setQuerys("");
   };
 
-  // Function to handle user search
   const handleSearch = (keyword) => {
     dispatch(searchUser({ keyword, token }));
   };
 
-  // Function to create a new message
   const handleCreateNewMessage = () => {
+    if (!content.trim() || !currentChat?.id) return;
     dispatch(
       createMessage({
         token,
-        data: { chatId: currentChat.id, content: content },
+        data: { chatId: currentChat.id, content: content.trim() },
       })
     );
-    setContent(""); // Clear content after sending
+    setContent("");
   };
 
-  // Effect to get the current user's information
   useEffect(() => {
     dispatch(currentUser(token));
   }, [token]);
 
-  // Function to set the current chat
   const handleCurrentChat = (item) => {
     setCurrentChat(item);
   };
 
-  // Effect to fetch messages when chat changes
   useEffect(() => {
-    chat?.chats && Array.isArray(chat.chats) &&
+    chat?.chats &&
+      Array.isArray(chat.chats) &&
       chat.chats.forEach((item) => {
         dispatch(getAllMessages({ chatId: item.id, token }));
       });
   }, [chat?.chats, token, dispatch]);
 
-  // Effect to update lastMessages when messages change
   useEffect(() => {
     const prevLastMessages = { ...lastMessages };
     if (message.messages && message.messages.length > 0) {
       message.messages.forEach((msg) => {
-        prevLastMessages[msg.chat.id] = msg;
+        if (msg.chat?.id) {
+          prevLastMessages[msg.chat.id] = msg;
+        }
       });
-
       setLastMessages(prevLastMessages);
     }
   }, [message.messages]);
 
-  // Function to navigate to the user's profile
   const handleNavigate = () => {
     setIsProfile(true);
   };
 
-  // Function to close the user's profile
   const handleCloseOpenProfile = () => {
     setIsProfile(false);
   };
 
-  // Function to handle creating a new group
   const handleCreateGroup = () => {
     setIsGroup(true);
   };
 
-  // Function to handle user logout
   const handleLogout = () => {
     try {
       if (stompClient && isConnected) {
         stompClient.deactivate();
         setIsConnected(false);
       }
-    } catch (e) { }
+    } catch (e) {}
     dispatch(logoutAction());
     navigate("/signin");
   };
 
-  // Effect to check if the user is authenticated
   useEffect(() => {
-    if (!auth.reqUser) {
+    if (!auth.reqUser && !token) {
       navigate("/signin");
     }
-  }, [auth.reqUser]);
-  return (
+  }, [auth.reqUser, token]);
 
-    <div className="relative">
-      <div className="w-[100vw] py-14 bg-[#00a884]">
-        <div className="flex bg-[#f0f2f5] h-[90vh] absolute top-[5vh] left-[2vw] w-[96vw]">
-          <div className="left w-[30%] h-full bg-[#e8e9ec]">
-            {isProfile && (
-              <div className="w-full h-full">
-                <Profile handleCloseOpenProfile={handleCloseOpenProfile} />
-              </div>
-            )}
-            {isGroup && <CreateGroup setIsGroup={setIsGroup} />}
-            {!isProfile && !isGroup && (
-              <div className="w-full">
-                <ProfileSection
-                  auth={auth}
-                  isProfile={isProfile}
-                  isGroup={isGroup}
-                  handleNavigate={handleNavigate}
-                  handleClick={handleClick}
-                  handleCreateGroup={handleCreateGroup}
-                  handleLogout={handleLogout}
-                  handleClose={handleClose}
-                  open={open}
-                  anchorEl={anchorEl}
-                />
-                <SearchBar
-                  querys={querys}
-                  setQuerys={setQuerys}
-                  handleSearch={handleSearch}
-                />
-                <ChatList
-                  querys={querys}
-                  auth={auth}
-                  chat={chat}
-                  lastMessages={lastMessages}
-                  handleClickOnChatCard={handleClickOnChatCard}
-                  handleCurrentChat={handleCurrentChat}
-                />
-              </div>
-            )}
+  // Determine current active chat details
+  const otherUser =
+    currentChat?.users?.find((u) => u?.id !== auth?.reqUser?.id) ||
+    currentChat?.users?.[0];
+
+  const currentChatName = currentChat?.group
+    ? currentChat?.chatName
+    : otherUser?.name || "User";
+
+  const currentChatImage = currentChat?.group
+    ? currentChat?.chatImage || DEFAULT_GROUP_AVATAR
+    : otherUser?.profile || DEFAULT_USER_AVATAR;
+
+  return (
+    <div className="w-screen h-screen flex overflow-hidden bg-[#0c1317]">
+      {/* Left Sidebar */}
+      <div className="w-[30%] min-w-[340px] max-w-[460px] h-full flex flex-col bg-[#111b21] border-r border-[#222d34]/60 relative z-20">
+        {isProfile && (
+          <div className="w-full h-full">
+            <Profile handleCloseOpenProfile={handleCloseOpenProfile} />
           </div>
-          {/* Default Chattingo Page */}
-          {!currentChat?.id && (
-            <div className="w-[70%] flex flex-col items-center justify-center h-full">
-              <div className="max-w-[70%] text-center">
-                <img
-                  className="ml-11 lg:w-[75%] "
-                  src="https://cdn.pixabay.com/photo/2015/08/03/13/58/whatsapp-873316_640.png"
-                  alt="chattingo-icon"
-                />
-                <h1 className="text-4xl text-gray-600">Chattingo Web</h1>
-                <p className="my-9">
-                  Send and receive messages with Chattingo and save time.
-                </p>
+        )}
+
+        {isGroup && (
+          <div className="w-full h-full">
+            <CreateGroup setIsGroup={setIsGroup} />
+          </div>
+        )}
+
+        {!isProfile && !isGroup && (
+          <div className="w-full h-full flex flex-col">
+            <ProfileSection
+              auth={auth}
+              handleNavigate={handleNavigate}
+              handleClick={handleClick}
+              handleCreateGroup={handleCreateGroup}
+              handleLogout={handleLogout}
+              handleClose={handleClose}
+              open={open}
+              anchorEl={anchorEl}
+            />
+
+            {/* Sidebar Navigation Tabs (Chats & Status) */}
+            <div className="flex bg-[#111b21] border-b border-[#222d34]/60 text-sm font-semibold">
+              <button
+                className="flex-1 py-2.5 text-center border-b-2 border-[#00a884] text-[#00a884]"
+              >
+                Chats
+              </button>
+              <button
+                onClick={() => navigate("/status")}
+                className="flex-1 py-2.5 text-center border-b-2 border-transparent text-[#8696a0] hover:text-[#e9edef] hover:border-white/10 transition-colors flex items-center justify-center space-x-1.5"
+                title="View & post status updates"
+              >
+                <span>Status</span>
+                <span className="w-2 h-2 rounded-full bg-[#00a884]"></span>
+              </button>
+            </div>
+
+            <SearchBar
+              querys={querys}
+              setQuerys={setQuerys}
+              handleSearch={handleSearch}
+            />
+            <ChatList
+              querys={querys}
+              auth={auth}
+              chat={chat}
+              lastMessages={lastMessages}
+              handleClickOnChatCard={handleClickOnChatCard}
+              handleCurrentChat={handleCurrentChat}
+              currentChat={currentChat}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Right Main Chat Area */}
+      <div className="flex-1 h-full flex flex-col bg-[#0b141a] relative">
+        {/* Empty State when no chat is selected */}
+        {!currentChat?.id && (
+          <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center select-none bg-[#111b21]/70">
+            <div className="relative mb-6">
+              <div className="w-36 h-36 rounded-full bg-gradient-to-tr from-[#00a884]/20 to-[#00a884]/5 flex items-center justify-center ring-1 ring-[#00a884]/30 shadow-2xl">
+                <span className="text-6xl">💬</span>
               </div>
             </div>
-          )}
+            <h1 className="text-3xl font-light text-[#e9edef] mb-2 tracking-wide">
+              Chattingo Web
+            </h1>
+            <p className="text-sm text-[#8696a0] max-w-md leading-relaxed mb-8">
+              Send and receive messages in real time. Select a conversation or search for a contact to begin chatting.
+            </p>
+            <div className="flex items-center text-xs text-[#8696a0] space-x-1.5 bg-[#202c33]/70 px-4 py-2 rounded-full border border-white/5">
+              <BsShieldLock className="text-[#00a884] text-sm" />
+              <span>End-to-end encrypted messaging</span>
+            </div>
+          </div>
+        )}
 
-          {/* Message Section */}
-          {currentChat?.id && (
-            <div className="w-[70%] relative  bg-blue-200">
-              <div className="header absolute top-0 w-full bg-[#f0f2f5]">
-                <div className="flex justify-between">
-                  <div className="py-3 space-x-4 flex items-center px-3">
-                    <img
-                      className="w-10 h-10 rounded-full"
-                      src={
-                        currentChat.group
-                          ? currentChat.chat_image ||
-                          "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp?b=1&s=170667a&w=0&k=20&c=wpJ0QJYXdbLx24H5LK08xSgiQ3zNkCAD2W3F74qlUL0="
-                          : auth.reqUser?.id !== currentChat.users[0]?.id
-                            ? currentChat.users[0]?.profile ||
-                            "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp?b=1&s=170667a&w=0&k=20&c=wpJ0QJYXdbLx24H5LK08xSgiQ3zNkCAD2W3F74qlUL0="
-                            : currentChat.users[1]?.profile ||
-                            "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp?b=1&s=170667a&w=0&k=20&c=wpJ0QJYXdbLx24H5LK08xSgiQ3zNkCAD2W3F74qlUL0="
-                      }
-                      alt="profile"
-                    />
-                    <p>
-                      {currentChat.group
-                        ? currentChat.chatName
-                        : auth.reqUser?.id !== currentChat.users[0]?.id
-                          ? currentChat.users[0].name
-                          : currentChat.users[1].name}
-                    </p>
-                  </div>
-                  <div className="flex py-3 space-x-4 items-center px-3">
-                    <AiOutlineSearch />
-                    <BsThreeDotsVertical />
-                  </div>
-                </div>
-              </div>
-
-              {/* Message Section */}
-              <div className="px-10 h-[85vh] overflow-y-scroll pb-10" ref={messageContainerRef}>
-                <div className="space-y-1 w-full flex flex-col justify-center items-end  mt-20 py-2">
-                  {messages?.length > 0 &&
-                    messages?.map((item, i) => (
-                      <MessageCard
-                        key={i}
-                        isReqUserMessage={item?.user?.id !== auth?.reqUser?.id}
-                        content={item.content}
-                        timestamp={item.timestamp}
-                        profilePic={item?.user?.profile || "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp?b=1&s=170667a&w=0&k=20&c=wpJ0QJYXdbLx24H5LK08xSgiQ3zNkCAD2W3F74qlUL0="}
-                      />
-                    ))}
-                </div>
-              </div>
-
-              {/* Footer Section */}
-              <div className="footer bg-[#f0f2f5] absolute bottom-0 w-full py-3 text-2xl">
-                <div className="flex justify-between items-center px-5 relative">
-                  <BsEmojiSmile className="cursor-pointer" />
-                  <ImAttachment />
-
-                  <input
-                    className="py-2 outline-none border-none bg-white pl-4 rounded-md w-[85%]"
-                    type="text"
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Type message"
-                    value={content}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter") {
-                        handleCreateNewMessage();
-                        setContent("");
-                      }
+        {/* Active Chat Conversation */}
+        {currentChat?.id && (
+          <div className="w-full h-full flex flex-col">
+            {/* Chat Top Header */}
+            <div className="shrink-0 px-4 py-2.5 bg-[#202c33] border-b border-[#222d34]/60 flex justify-between items-center z-10 shadow-sm">
+              <div className="flex items-center space-x-3.5">
+                <div className="relative">
+                  <img
+                    className="w-10 h-10 rounded-full object-cover ring-1 ring-white/10"
+                    src={currentChatImage}
+                    alt={currentChatName}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = currentChat?.group
+                        ? DEFAULT_GROUP_AVATAR
+                        : DEFAULT_USER_AVATAR;
                     }}
                   />
-                  <BsMicFill />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00a884] rounded-full ring-2 ring-[#202c33]"></span>
+                </div>
+                <div>
+                  <h2 className="text-[16px] font-semibold text-[#e9edef] leading-tight">
+                    {currentChatName}
+                  </h2>
+                  <p className="text-xs text-[#8696a0] mt-0.5">
+                    {currentChat?.group
+                      ? `${currentChat?.users?.length || 2} members`
+                      : "online"}
+                  </p>
                 </div>
               </div>
+
+              <div className="flex items-center space-x-4 text-[#aebac1]">
+                <button
+                  title="Search inside chat"
+                  className="p-2 hover:bg-[#111b21]/60 rounded-full transition-colors"
+                >
+                  <AiOutlineSearch className="text-xl" />
+                </button>
+                <button
+                  title="More options"
+                  className="p-2 hover:bg-[#111b21]/60 rounded-full transition-colors"
+                >
+                  <BsThreeDotsVertical className="text-lg" />
+                </button>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Scrollable Messages Section */}
+            <div
+              className="flex-1 overflow-y-auto px-6 py-4 chat-bg-pattern space-y-1.5"
+              ref={messageContainerRef}
+            >
+              {messages?.length > 0 ? (
+                messages.map((item, i) => (
+                  <MessageCard
+                    key={i}
+                    isReqUserMessage={item?.user?.id === auth?.reqUser?.id}
+                    content={item.content}
+                    timestamp={item.timestamp}
+                    profilePic={item?.user?.profile || DEFAULT_USER_AVATAR}
+                    senderName={item?.user?.name}
+                  />
+                ))
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center">
+                  <div className="bg-[#202c33]/80 px-4 py-2 rounded-lg text-xs text-[#8696a0] max-w-xs shadow">
+                    🔒 Messages are end-to-end encrypted. No one outside of this chat can read them.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Input Section */}
+            <div className="shrink-0 bg-[#202c33] px-4 py-2.5 flex items-center space-x-3 border-t border-[#222d34]/60">
+              <button
+                title="Emojis"
+                className="text-[#8696a0] hover:text-[#e9edef] p-1.5 rounded-full hover:bg-[#111b21]/40 transition-colors"
+              >
+                <BsEmojiSmile className="text-xl" />
+              </button>
+              <button
+                title="Attach"
+                className="text-[#8696a0] hover:text-[#e9edef] p-1.5 rounded-full hover:bg-[#111b21]/40 transition-colors"
+              >
+                <ImAttachment className="text-lg" />
+              </button>
+
+              <input
+                className="flex-1 py-2.5 px-4 outline-none border-none bg-[#2a3942] text-[#e9edef] placeholder-[#8696a0] rounded-lg text-[15px]"
+                type="text"
+                placeholder="Type a message"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleCreateNewMessage();
+                  }
+                }}
+              />
+
+              {content.trim() ? (
+                <button
+                  onClick={handleCreateNewMessage}
+                  title="Send message"
+                  className="bg-[#00a884] text-white p-2.5 rounded-full hover:bg-[#00a884]/90 transition-all shadow-md active:scale-95"
+                >
+                  <IoSend className="text-lg" />
+                </button>
+              ) : (
+                <button
+                  title="Voice message"
+                  className="text-[#8696a0] hover:text-[#e9edef] p-2 rounded-full hover:bg-[#111b21]/40 transition-colors"
+                >
+                  <BsMicFill className="text-xl" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

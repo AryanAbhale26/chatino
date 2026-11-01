@@ -13,6 +13,7 @@ public class User {
     private int id;
     private String name;
     private String email;
+    @jakarta.persistence.Column(columnDefinition = "LONGTEXT")
     private String profile;
     private String password;
 

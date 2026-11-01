@@ -21,6 +21,7 @@ public class Chat {
     private Integer id;
 
     private String chatName;
+    @jakarta.persistence.Column(columnDefinition = "LONGTEXT")
     private String chatImage;
     private boolean isGroup;
 
