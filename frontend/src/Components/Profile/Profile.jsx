@@ -40,13 +40,21 @@ const Profile = ({ handleCloseOpenProfile }) => {
     })
       .then((res) => res.json())
       .then((data) => {
-        setTempPicture(data.url.toString());
-        const dataa = {
-          id: auth.reqUser.id,
-          token: localStorage.getItem("token"),
-          data: { profile: data.url.toString() },
-        };
-        dispatch(updateUser(dataa));
+        if (data && (data.secure_url || data.url)) {
+          const imageUrl = (data.secure_url || data.url).toString();
+          setTempPicture(imageUrl);
+          const dataa = {
+            id: auth.reqUser?.id,
+            token: localStorage.getItem("token"),
+            data: { profile: imageUrl },
+          };
+          dispatch(updateUser(dataa));
+        } else {
+          console.error("Cloudinary upload failed or missing url:", data);
+        }
+      })
+      .catch((err) => {
+        console.error("Cloudinary upload error:", err);
       });
   };
 

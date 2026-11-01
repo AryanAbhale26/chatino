@@ -56,7 +56,15 @@ const NewGroup = ({ groupMember, setIsGroup }) => {
       .then((res) => res.json())
       .then((data) => {
         // Set the group image URL and update the image uploading flag
-        setGroupImage(data.url.toString());
+        if (data && (data.secure_url || data.url)) {
+          setGroupImage((data.secure_url || data.url).toString());
+        } else {
+          console.error("Cloudinary upload failed or missing url:", data);
+        }
+        setIsImageUploading(false);
+      })
+      .catch((err) => {
+        console.error("Cloudinary upload error:", err);
         setIsImageUploading(false);
       });
   };
