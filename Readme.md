@@ -54,19 +54,33 @@ Developed by **[Aryan Abhale](https://github.com/AryanAbhale26)**.
 - **Group Creation**: Create multi-user group conversations with custom group subject titles and group icons.
 - **Participant Management**: Search contacts, add members with interactive chip selection, and customize group properties.
 
-### ⭕ Status Stories
-- **WhatsApp-style Status Feed**: Share vanishing multimedia status updates with your contacts.
-- **Story Viewer Carousel**: Automated story progression with interactive pause on press/hold, left/right navigation, and duration bars.
-- **Status Replies**: Send direct replies to contacts from within their status story views.
-- **Local Persistence**: Upload and preview your status updates instantly.
+### ⭕ Database-Backed Status Stories
+- **Cross-User Synchronization**: Status updates persist directly in MySQL and are accessible across all active users and browser sessions.
+- **Client-Side Image Optimization**: High-resolution camera photos are automatically scaled and compressed via HTML5 Canvas before uploading to ensure fast delivery.
+- **Story Viewer Carousel**: Automated story progression with animated duration bars and interactive pause-on-press/hold.
+- **Navigation Controls**:
+  - Prominent, floating circular **Forward** and **Backward** navigation buttons.
+  - WhatsApp-style tap/click zones (tap right to advance, tap left to go back).
+  - Full keyboard accessibility (<kbd>→</kbd> Next, <kbd>←</kbd> Previous, <kbd>Esc</kbd> Exit).
+- **Status Replies**: Send direct text replies to contacts immediately from within their story view.
+- **Smart Timestamps**: Human-readable relative status times (e.g., *"Today, 9:07 PM"*, *"Yesterday, 3:15 PM"*).
+
+### 🔍 Interactive Profile Lightbox (Image Zoom)
+- **High-Definition Inspection**: Click any active chat avatar or header title to open a full-screen, high-resolution image zoom modal.
+- **Zoom Controls**: Smooth zoom in (+), zoom out (-), and reset controls with backdrop blur and ESC-key dismissal.
+
+### 😊 WhatsApp-Style Categorized Emoji Picker
+- **Rich Emoji Library**: Comprehensive emoji categories (Smileys, People, Nature, Food, Travel, Activities, Objects, Symbols).
+- **Instant Search**: Real-time emoji search by keyword and name with direct insertion into the message input field.
 
 ### 🎨 Sleek Modern UI & Design System
 - **Dark Mode Aesthetic**: Custom curated color palette inspired by modern WhatsApp Web (`#111b21`, `#202c33`, and vibrant emerald accents `#00a884`).
 - **Responsive Layout**: Designed for seamless usability across widescreen monitors, laptops, and tablets.
 - **Interactive Feedback**: Smooth transitions, hover micro-interactions, and message bubble animations.
 
-### 🔒 Security & Data Integrity
+### 🔒 Security, Authentication & Account Validation
 - **JWT (JSON Web Tokens)**: Stateless authentication with secure authorization headers on REST and WebSocket channels.
+- **Duplicate Account Handling**: Intelligent sign-up validation that detects existing accounts and renders a direct *"Sign In with [email]"* prompt.
 - **Spring Security**: Password encryption via BCrypt and endpoint protection.
 - **Relational Persistence**: MySQL schema managed by Spring Data JPA and Hibernate.
 
@@ -363,6 +377,10 @@ The application opens at `http://localhost:3000`.
 | `GET` | `/api/chats/user` | Fetch all chats for the logged-in user |
 | `POST` | `/api/messages/create` | Send a new message |
 | `GET` | `/api/messages/chat/{chatId}` | Retrieve message history for a chat |
+| `POST` | `/api/status/create` | Publish a new photo status update with caption |
+| `GET` | `/api/status/my` | Fetch current user's published active statuses |
+| `GET` | `/api/status/recent` | Fetch recent contacts' statuses grouped by user |
+| `GET` | `/api/status/user/{userId}` | Fetch a specific user's status updates |
 | `WS` | `/ws` | WebSocket handshake & STOMP topic subscriptions |
 
 ---
