@@ -27,20 +27,58 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Push to Docker Hub') {
             steps {
-                echo 'Deployment will be configured after Docker Hub setup.'
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USERNAME',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    script {
+                        try {
+                            sh '''
+                                set -e
+
+                                echo "$DOCKERHUB_TOKEN" | docker login \
+                                    --username "$DOCKERHUB_USERNAME" \
+                                    --password-stdin
+
+                                docker tag chatino-frontend:${BUILD_NUMBER} \
+                                    "$DOCKERHUB_USERNAME/chatino-frontend:${BUILD_NUMBER}"
+
+                                docker tag chatino-backend:${BUILD_NUMBER} \
+                                    "$DOCKERHUB_USERNAME/chatino-backend:${BUILD_NUMBER}"
+
+                                docker tag chatino-frontend:${BUILD_NUMBER} \
+                                    "$DOCKERHUB_USERNAME/chatino-frontend:latest"
+
+                                docker tag chatino-backend:${BUILD_NUMBER} \
+                                    "$DOCKERHUB_USERNAME/chatino-backend:latest"
+
+                                docker push "$DOCKERHUB_USERNAME/chatino-frontend:${BUILD_NUMBER}"
+                                docker push "$DOCKERHUB_USERNAME/chatino-backend:${BUILD_NUMBER}"
+
+                                docker push "$DOCKERHUB_USERNAME/chatino-frontend:latest"
+                                docker push "$DOCKERHUB_USERNAME/chatino-backend:latest"
+                            '''
+                        } finally {
+                            sh 'docker logout || true'
+                        }
+                    }
+                }
             }
         }
     }
 
     post {
         success {
-            echo 'Chatino pipeline completed successfully!'
+            echo 'Chatino images successfully pushed to Docker Hub!'
         }
 
         failure {
-            echo 'Chatino pipeline failed. Check the console output.'
+            echo 'Pipeline failed. Check Console Output.'
         }
     }
 }
