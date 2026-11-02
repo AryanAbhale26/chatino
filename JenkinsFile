@@ -1,0 +1,34 @@
+pipeline{
+  agent any
+  stages{
+    stage('checkout'){
+      steps{
+        echo "jeckins has successfully checkouy"
+      }
+    }
+    stage('verify docker'){
+      steps{
+        sh 'docker --version'
+      }
+    }
+    stage("build frontend "){
+      sh 'docker build -t chatino-frontend:${BUILD_NUMBER} frontend/'
+    }
+    stage("build backend "){
+      sh 'docker build -t chatino-backend:${BUILD_NUMBER} backend/'
+    }
+    stage("deploy "){
+      echo ""
+    }
+  }
+  post{
+    success{
+      echo ' pipeline completed successfully'
+    }
+    failure{
+      echo 'pipeline failed'
+    }
+  }
+
+
+}
