@@ -2,6 +2,10 @@
 pipeline {
     agent any
 
+    environment {
+        EC2_HOST = '65.2.3.32'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -70,11 +74,112 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to EC2') {
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'chatino-ec2-ssh',
+                        keyFileVariable: 'SSH_KEY',
+                        usernameVariable: 'SSH_USER'
+                    ),
+                    file(
+                        credentialsId: 'chatino-prod-env',
+                        variable: 'PROD_ENV_FILE'
+                    ),
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USERNAME',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set -e
+
+                        TARGET="${SSH_USER}@${EC2_HOST}"
+
+                        echo "Connecting to EC2..."
+
+                        # Install Docker automatically if needed
+                        ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=accept-new \
+                            "$TARGET" 'bash -s' <<'REMOTE'
+set -e
+
+if ! command -v docker >/dev/null 2>&1 || \
+   ! sudo docker compose version >/dev/null 2>&1; then
+
+    sudo apt-get update
+    sudo apt-get install -y ca-certificates curl
+
+    curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+    sudo sh /tmp/get-docker.sh
+    rm -f /tmp/get-docker.sh
+fi
+
+sudo systemctl enable --now docker
+
+sudo mkdir -p /opt/chatino
+sudo chown "$USER:$USER" /opt/chatino
+
+REMOTE
+
+                        echo "Transferring deployment files..."
+
+                        # Transfer Compose configuration
+                        scp -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=accept-new \
+                            "$WORKSPACE/docker-compose.yml" \
+                            "$TARGET:/opt/chatino/docker-compose.yml"
+
+                        # Transfer production environment securely
+                        scp -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=accept-new \
+                            "$PROD_ENV_FILE" \
+                            "$TARGET:/opt/chatino/.env.production"
+
+                        echo "Logging in to Docker Hub on EC2..."
+
+                        printf '%s' "$DOCKERHUB_TOKEN" | \
+                            ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=accept-new \
+                            "$TARGET" \
+                            "sudo docker login --username '$DOCKERHUB_USERNAME' --password-stdin"
+
+                        echo "Deploying Chatino..."
+
+                        ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=accept-new \
+                            "$TARGET" 'bash -s' <<'REMOTE'
+set -e
+
+trap 'sudo docker logout >/dev/null 2>&1 || true' EXIT
+
+cd /opt/chatino
+chmod 600 .env.production
+
+sudo docker compose \
+    --env-file .env.production \
+    pull
+
+sudo docker compose \
+    --env-file .env.production \
+    up -d --no-build
+
+sudo docker compose ps
+
+REMOTE
+
+                        echo "Chatino deployment completed!"
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'Chatino images successfully pushed to Docker Hub!'
+            echo 'Chatino CI/CD completed successfully!'
         }
 
         failure {
