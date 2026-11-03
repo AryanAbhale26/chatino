@@ -1,5 +1,7 @@
+
 services:
   frontend:
+    image: ${DOCKERHUB_USERNAME}/chatino-frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -11,6 +13,7 @@ services:
     restart: unless-stopped
 
   backend:
+    image: ${DOCKERHUB_USERNAME}/chatino-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -30,7 +33,7 @@ services:
     image: mysql:8.0
     container_name: chatino-mysql
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     environment:
       MYSQL_DATABASE: chattingo_db
       MYSQL_USER: ${DB_USERNAME}
