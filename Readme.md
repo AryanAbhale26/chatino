@@ -91,7 +91,7 @@ Developed by **[Aryan Abhale](https://github.com/AryanAbhale26)**.
 | Domain | Technologies |
 |---|---|
 | **Frontend** | React 18, Redux Toolkit, Tailwind CSS, Material-UI, React Icons, SockJS, StompJS, React Router |
-| **Backend** | Spring Boot 3.3.1, Java 17+, Spring Security 6, Spring Data JPA, Spring WebSocket, JJWT |
+| **Backend** | Spring Boot 3.3.1, Java 17, Spring Security 6, Spring Data JPA, Spring WebSocket, JJWT |
 | **Database** | MySQL 8.0 |
 | **Containerization** | Docker, Docker Compose (Multi-stage builds) |
 | **CI/CD & DevOps** | Jenkins Declarative Pipeline, Trivy Security Scanner, Docker Hub |
